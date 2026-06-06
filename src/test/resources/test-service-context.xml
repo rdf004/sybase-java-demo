@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+  xmlns=
+    "http://www.springframework.org/schema/beans"
+  xmlns:xsi=
+    "http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+
+  <!--
+    Test context for service layer tests.
+    Includes all DAO beans plus services.
+  -->
+
+  <bean id="dataSource"
+    class="org.apache.commons.dbcp.BasicDataSource"
+    destroy-method="close">
+    <property name="driverClassName"
+      value=
+        "com.sybase.jdbc4.jdbc.SybDriver" />
+    <property name="url"
+      value=
+  "jdbc:sybase:Tds:10.2.48.101:5000/ubs_ledger" />
+    <property name="username"
+      value="sa" />
+    <property name="password"
+      value="sybase_password" />
+    <property name="maxActive"
+      value="5" />
+  </bean>
+
+  <bean id="jdbcTemplate"
+    class="org.springframework.jdbc.core.JdbcTemplate">
+    <property name="dataSource"
+      ref="dataSource" />
+  </bean>
+
+  <bean id="transactionManager"
+    class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <property name="dataSource"
+      ref="dataSource" />
+  </bean>
+
+  <bean id="transactionTemplate"
+    class="org.springframework.transaction.support.TransactionTemplate">
+    <property name="transactionManager"
+      ref="transactionManager" />
+  </bean>
+
+  <!-- DAOs -->
+  <bean id="tradeDao"
+    class="com.ubs.ledger.dao.TradeDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="tradeAuditDao"
+    class="com.ubs.ledger.dao.TradeAuditDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="settlementDao"
+    class="com.ubs.ledger.dao.SettlementDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="reportDao"
+    class="com.ubs.ledger.dao.ReportDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="counterpartyDao"
+    class="com.ubs.ledger.dao.CounterpartyDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="instrumentDao"
+    class="com.ubs.ledger.dao.InstrumentDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="traderDao"
+    class="com.ubs.ledger.dao.TraderDao">
+    <property name="jdbcTemplate"
+      ref="jdbcTemplate" />
+  </bean>
+
+  <!-- Services -->
+  <bean id="tradeService"
+    class="com.ubs.ledger.service.TradeService">
+    <property name="tradeDao"
+      ref="tradeDao" />
+    <property name="tradeAuditDao"
+      ref="tradeAuditDao" />
+    <property name="settlementDao"
+      ref="settlementDao" />
+    <property name="transactionTemplate"
+      ref="transactionTemplate" />
+  </bean>
+
+  <bean id="reportService"
+    class="com.ubs.ledger.service.ReportService">
+    <property name="reportDao"
+      ref="reportDao" />
+  </bean>
+
+</beans>
