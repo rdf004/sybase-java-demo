@@ -66,6 +66,14 @@ public class ReportController {
                 );
             }
         }
+        if (start != null && end == null) {
+            end = new Date();
+        }
+        if (start == null && end != null) {
+            start = DATE_FMT.parse(
+                "2012-01-01"
+            );
+        }
 
         List<Map<String, Object>> data =
             svc.getDailyPnl(start, end);
@@ -109,6 +117,14 @@ public class ReportController {
                     endStr
                 );
             }
+        }
+        if (start != null && end == null) {
+            end = new Date();
+        }
+        if (start == null && end != null) {
+            start = DATE_FMT.parse(
+                "2012-01-01"
+            );
         }
 
         List<Map<String, Object>> data =
