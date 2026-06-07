@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST:localhost}:1433;database=${DB_NAME:azure_sql_demo_target};encrypt=true;trustServerCertificate=false
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.ubs.ledger: DEBUG
+    org.springframework: WARN

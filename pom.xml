@@ -5,113 +5,89 @@
     "http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation=
     "http://maven.apache.org/POM/4.0.0
-     http://maven.apache.org/xsd/maven-4.0.0.xsd">
+     https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>
+      org.springframework.boot
+    </groupId>
+    <artifactId>
+      spring-boot-starter-parent
+    </artifactId>
+    <version>3.3.6</version>
+    <relativePath />
+  </parent>
+
   <groupId>com.ubs.ledger</groupId>
-  <artifactId>trade-ledger-service</artifactId>
-  <version>1.4.2</version>
-  <packaging>war</packaging>
+  <artifactId>
+    trade-ledger-service
+  </artifactId>
+  <version>2.0.0</version>
+  <packaging>jar</packaging>
 
   <name>Trade Ledger Service</name>
   <description>
     REST API for Fixed Income Operations.
-    Connects to Sybase ASE (ubs_ledger).
+    Connects to Azure SQL.
   </description>
 
   <properties>
-    <project.build.sourceEncoding>
-      UTF-8
-    </project.build.sourceEncoding>
-    <java.version>1.7</java.version>
-    <spring.version>3.2.18.RELEASE</spring.version>
-    <jackson.version>1.9.13</jackson.version>
-    <log4j.version>1.2.17</log4j.version>
-    <junit.version>4.11</junit.version>
-    <dbcp.version>1.4</dbcp.version>
+    <java.version>21</java.version>
   </properties>
 
   <dependencies>
-    <!-- Spring Framework 3.2 -->
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-webmvc</artifactId>
-      <version>${spring.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jdbc</artifactId>
-      <version>${spring.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-tx</artifactId>
-      <version>${spring.version}</version>
-    </dependency>
-
-    <!-- Jackson 1.x for JSON -->
     <dependency>
       <groupId>
-        org.codehaus.jackson
+        org.springframework.boot
       </groupId>
       <artifactId>
-        jackson-mapper-asl
+        spring-boot-starter-web
       </artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
-    <!-- Sybase jConnect JDBC driver -->
-    <!--
-      NOTE: jConnect is not in Maven Central.
-      Must be installed to local repo via:
-        mvn install:install-file \
-          -Dfile=jconn4.jar \
-          -DgroupId=com.sybase \
-          -DartifactId=jconnect \
-          -Dversion=7.0 \
-          -Dpackaging=jar
-      See deploy/README for instructions.
-    -->
     <dependency>
-      <groupId>com.sybase</groupId>
-      <artifactId>jconnect</artifactId>
-      <version>7.0</version>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-data-jpa
+      </artifactId>
     </dependency>
 
-    <!-- Connection pool - Commons DBCP 1.4 -->
     <dependency>
-      <groupId>commons-dbcp</groupId>
-      <artifactId>commons-dbcp</artifactId>
-      <version>${dbcp.version}</version>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-actuator
+      </artifactId>
     </dependency>
 
-    <!-- Servlet API (provided by Tomcat) -->
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>3.0.1</version>
-      <scope>provided</scope>
+      <groupId>
+        com.microsoft.sqlserver
+      </groupId>
+      <artifactId>mssql-jdbc</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
-    <!-- Logging - Log4j 1.x -->
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>${log4j.version}</version>
+      <groupId>
+        org.projectlombok
+      </groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
     </dependency>
 
-    <!-- Testing -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <version>${spring.version}</version>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-test
+      </artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -123,29 +99,23 @@
     <plugins>
       <plugin>
         <groupId>
-          org.apache.maven.plugins
+          org.springframework.boot
         </groupId>
         <artifactId>
-          maven-compiler-plugin
+          spring-boot-maven-plugin
         </artifactId>
-        <version>3.1</version>
         <configuration>
-          <source>
-            ${java.version}
-          </source>
-          <target>
-            ${java.version}
-          </target>
+          <excludes>
+            <exclude>
+              <groupId>
+                org.projectlombok
+              </groupId>
+              <artifactId>
+                lombok
+              </artifactId>
+            </exclude>
+          </excludes>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>
-          org.apache.maven.plugins
-        </groupId>
-        <artifactId>
-          maven-war-plugin
-        </artifactId>
-        <version>2.4</version>
       </plugin>
     </plugins>
   </build>

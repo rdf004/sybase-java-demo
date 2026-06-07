@@ -1,85 +1,40 @@
 package com.ubs.ledger.controller;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory
-    .annotation.Autowired;
-import org.springframework.jdbc
-    .core.JdbcTemplate;
-import org.springframework.stereotype
-    .Controller;
+import org.springframework.jdbc.core
+    .JdbcTemplate;
 import org.springframework.web.bind
-    .annotation.RequestMapping;
+    .annotation.GetMapping;
 import org.springframework.web.bind
-    .annotation.RequestMethod;
-import org.springframework.web.bind
-    .annotation.ResponseBody;
+    .annotation.RestController;
 
-/**
- * Health check controller.
- * Tests Sybase ASE connectivity.
- *
- * @author Platform Engineering
- * @since 1.0
- */
-@Controller
+@RestController
 public class HealthController {
 
-    private static final Logger LOG =
-        Logger.getLogger(
-            HealthController.class
-        );
+    private final JdbcTemplate jdbc;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    public HealthController(
+        JdbcTemplate jdbc
+    ) {
+        this.jdbc = jdbc;
+    }
 
-    @RequestMapping(
-        value = "/health",
-        method = RequestMethod.GET
-    )
-    @ResponseBody
+    @GetMapping("/api/health")
     public Map<String, Object> health() {
-        Map<String, Object> result =
-            new HashMap<String, Object>();
-        SimpleDateFormat sdf =
-            new SimpleDateFormat(
-                "yyyy-MM-dd HH:mm:ss"
-            );
-        try {
-            List<Map<String, Object>> rows =
-                jdbcTemplate.queryForList(
-                    "SELECT @@servername"
-                    + " as server_name,"
-                    + " db_name()"
-                    + " as db_name"
-                );
-            result.put("status", "UP");
-            result.put(
+        var row = jdbc.queryForMap(
+            "SELECT @@SERVERNAME"
+            + " AS server_name,"
+            + " DB_NAME() AS db_name"
+        );
+        return Map.of(
+            "status", "UP",
+            "database", Map.of(
+                "server",
+                row.get("server_name"),
                 "database",
-                rows.isEmpty()
-                    ? "unknown"
-                    : rows.get(0)
-            );
-            result.put(
-                "timestamp",
-                sdf.format(new Date())
-            );
-        } catch (Exception e) {
-            LOG.error(
-                "Health check failed: "
-                + e.getMessage()
-            );
-            result.put("status", "DOWN");
-            result.put(
-                "error",
-                "cannot reach database"
-            );
-        }
-        return result;
+                row.get("db_name")
+            )
+        );
     }
 }

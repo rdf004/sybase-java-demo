@@ -1,115 +1,87 @@
 package com.ubs.ledger.dao;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api
+    .Assertions.*;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory
     .annotation.Autowired;
-import org.springframework.test.context
-    .ContextConfiguration;
-import org.springframework.test.context
-    .junit4.SpringJUnit4ClassRunner;
+import org.springframework.boot.test.context
+    .SpringBootTest;
 
-import com.ubs.ledger.exception
-    .LedgerException;
 import com.ubs.ledger.model.Trade;
 
-/**
- * Integration tests for TradeDao.
- *
- * Runs against a live Sybase ASE instance
- * with the ubs_ledger database.
- *
- * These are the regression tests that prove
- * stored proc parity after any migration.
- *
- * Requires applicationContext.xml on
- * classpath with valid Sybase connection.
- *
- * @author A. Kowalski
- * @since 1.0
- */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-    "classpath:test-context.xml"
-})
-public class TradeDaoIntegrationTest {
+@SpringBootTest
+class TradeDaoIntegrationTest {
 
     @Autowired
     private TradeDao tradeDao;
 
     @Test
-    public void testFindAll()
-        throws LedgerException {
+    void findAll() {
         List<Trade> trades =
             tradeDao.findAll(100);
         assertNotNull(trades);
         assertFalse(
-            "Should have seed data",
-            trades.isEmpty()
+            trades.isEmpty(),
+            "Should have seed data"
         );
         assertTrue(
-            "Should have multiple trades",
-            trades.size() > 1
+            trades.size() > 1,
+            "Should have multiple trades"
         );
     }
 
     @Test
-    public void testFindWithDetails()
-        throws LedgerException {
+    void findWithDetails() {
         Trade trade =
             tradeDao.findWithDetails(1);
         assertNotNull(
-            "Trade 1 should exist",
-            trade
+            trade,
+            "Trade 1 should exist"
         );
         assertNotNull(
-            "Should have cp_code",
-            trade.getCpCode()
+            trade.getCpCode(),
+            "Should have cp_code"
         );
         assertNotNull(
-            "Should have ticker",
-            trade.getTicker()
+            trade.getTicker(),
+            "Should have ticker"
         );
         assertNotNull(
-            "Should have emp_code",
-            trade.getEmpCode()
+            trade.getEmpCode(),
+            "Should have emp_code"
         );
     }
 
     @Test
-    public void
-        testFindWithDetailsNotFound()
-        throws LedgerException {
+    void findWithDetailsNotFound() {
         Trade trade =
             tradeDao.findWithDetails(
                 99999
             );
         assertNull(
+            trade,
             "Non-existent trade"
-            + " should be null",
-            trade
+            + " should be null"
         );
     }
 
     @Test
-    public void testSearchByStatus()
-        throws LedgerException {
-        Map<String, String> filters =
+    void searchByStatus() {
+        var filters =
             new HashMap<String, String>();
         filters.put("status", "PENDING");
 
         List<Trade> trades =
             tradeDao.search(filters);
         assertNotNull(trades);
-        for (Trade t : trades) {
+        for (var t : trades) {
             assertEquals(
                 "PENDING",
                 t.getStatus().trim()
@@ -118,8 +90,7 @@ public class TradeDaoIntegrationTest {
     }
 
     @Test
-    public void testBookTradeSp()
-        throws LedgerException {
+    void bookTradeSp() {
         long newId = tradeDao.bookTrade(
             "TEST-JAVA-001",
             new Date(),
@@ -132,15 +103,13 @@ public class TradeDaoIntegrationTest {
             98.75, "USD", 0.0
         );
         assertTrue(
-            "Should return new trade ID",
-            newId > 0
+            newId > 0,
+            "Should return new trade ID"
         );
     }
 
     @Test
-    public void testMatchTradeSp()
-        throws LedgerException {
-        // first book a trade
+    void matchTradeSp() {
         long newId = tradeDao.bookTrade(
             "TEST-MATCH-001",
             new Date(),
@@ -154,16 +123,12 @@ public class TradeDaoIntegrationTest {
         );
         assertTrue(newId > 0);
 
-        // then match it
         tradeDao.matchTrade(
             newId, "TEST-USER"
         );
 
-        // verify status changed
         Trade trade =
-            tradeDao.findWithDetails(
-                newId
-            );
+            tradeDao.findWithDetails(newId);
         assertNotNull(trade);
         assertEquals(
             "MATCHED",

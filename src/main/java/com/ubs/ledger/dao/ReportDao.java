@@ -5,202 +5,144 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.springframework.jdbc
-    .core.JdbcTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core
+    .JdbcTemplate;
+import org.springframework.stereotype
+    .Repository;
 
 import com.ubs.ledger.exception
     .LedgerException;
 
-/**
- * DAO for reporting stored procedures.
- * Returns results as List of Maps because
- * report result sets have variable columns.
- *
- * Uses raw CallableStatement for all procs
- * because JdbcTemplate doesn't handle
- * Sybase multiple result sets well.
- *
- * @author Platform Engineering
- * @since 1.3
- */
+@Repository
 public class ReportDao {
 
     private static final Logger LOG =
-        Logger.getLogger(ReportDao.class);
+        LoggerFactory.getLogger(
+            ReportDao.class
+        );
 
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbc;
 
-    public void setJdbcTemplate(
-        JdbcTemplate jdbcTemplate
-    ) {
-        this.jdbcTemplate = jdbcTemplate;
+    public ReportDao(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
     }
 
-    /**
-     * Execute sp_daily_pnl and return
-     * results as list of maps.
-     */
     public List<Map<String, Object>>
         dailyPnl(
             Date startDate, Date endDate
-        ) throws LedgerException {
-        return executeReportProc(
-            "exec sp_daily_pnl ?, ?",
-            new Object[]{
-                new java.sql.Timestamp(
-                    startDate.getTime()
-                ),
-                new java.sql.Timestamp(
-                    endDate.getTime()
-                )
-            }
+        ) {
+        return execReport(
+            "{call sp_daily_pnl(?,?)}",
+            startDate, endDate
         );
     }
 
-    /**
-     * Execute sp_aging_report.
-     */
     public List<Map<String, Object>>
-        agingReport()
-        throws LedgerException {
-        return executeReportProc(
-            "exec sp_aging_report", null
+        agingReport() {
+        return execReport(
+            "{call sp_aging_report}",
+            null, null
         );
     }
 
-    /**
-     * Execute sp_settle_report.
-     */
     public List<Map<String, Object>>
         settlementReport(
             Date startDate, Date endDate
-        ) throws LedgerException {
-        Object[] params = null;
-        String sql =
-            "exec sp_settle_report";
-        if (startDate != null
-            && endDate != null) {
-            sql += " ?, ?";
-            params = new Object[]{
-                new java.sql.Timestamp(
-                    startDate.getTime()
-                ),
-                new java.sql.Timestamp(
-                    endDate.getTime()
-                )
-            };
-        }
-        return executeReportProc(
-            sql, params
+        ) {
+        return execReport(
+            "{call sp_settle_report(?,?)}",
+            startDate, endDate
         );
     }
 
-    /**
-     * Generic report proc executor.
-     * Reads all columns from the result set
-     * dynamically and returns as list of
-     * maps.
-     *
-     * Handles Sybase CHAR padding by
-     * trimming string values.
-     */
     private List<Map<String, Object>>
-        executeReportProc(
-            String sql, Object[] params
-        ) throws LedgerException {
-        Connection conn = null;
-        CallableStatement cs = null;
-        ResultSet rs = null;
-        try {
-            conn = jdbcTemplate
+        execReport(
+            String call,
+            Date startDate,
+            Date endDate
+        ) {
+        try (
+            Connection conn = jdbc
                 .getDataSource()
                 .getConnection();
-            cs = conn.prepareCall(sql);
-
-            if (params != null) {
-                for (int i = 0;
-                    i < params.length;
-                    i++) {
-                    cs.setObject(
-                        i + 1, params[i]
-                    );
-                }
+            CallableStatement cs =
+                conn.prepareCall(call)
+        ) {
+            if (startDate != null) {
+                cs.setTimestamp(1,
+                    new Timestamp(
+                        startDate.getTime()
+                    )
+                );
+                cs.setTimestamp(2,
+                    new Timestamp(
+                        endDate.getTime()
+                    )
+                );
             }
 
-            boolean hasResults =
-                cs.execute();
+            boolean has = cs.execute();
+            var rows =
+                new ArrayList<
+                    Map<String, Object>
+                >();
 
-            List<Map<String, Object>>
-                results = new ArrayList
-                    <Map<String, Object>>();
-
-            if (hasResults) {
-                rs = cs.getResultSet();
-                ResultSetMetaData meta =
-                    rs.getMetaData();
-                int colCount =
-                    meta.getColumnCount();
-
-                while (rs.next()) {
-                    Map<String, Object> row =
-                        new HashMap
-                        <String, Object>();
-                    for (int i = 1;
-                        i <= colCount;
-                        i++) {
-                        String colName =
-                            meta
-                            .getColumnLabel(
-                                i
+            while (has) {
+                try (ResultSet rs =
+                    cs.getResultSet()
+                ) {
+                    ResultSetMetaData md =
+                        rs.getMetaData();
+                    int cols =
+                        md.getColumnCount();
+                    while (rs.next()) {
+                        var row =
+                            new LinkedHashMap<
+                                String,
+                                Object
+                            >();
+                        for (
+                            int i = 1;
+                            i <= cols;
+                            i++
+                        ) {
+                            row.put(
+                                md.getColumnLabel(
+                                    i
+                                ).toLowerCase(),
+                                rs.getObject(i)
                             );
-                        Object val =
-                            rs.getObject(i);
-                        if (val
-                            instanceof
-                            String) {
-                            val = ((String)
-                                val).trim();
                         }
-                        row.put(
-                            colName, val
-                        );
+                        rows.add(row);
                     }
-                    results.add(row);
                 }
+                has = cs.getMoreResults();
             }
 
-            return results;
+            LOG.debug(
+                "Report returned {} rows",
+                rows.size()
+            );
+            return rows;
         } catch (SQLException e) {
             LOG.error(
-                "Report proc failed: "
-                + sql + " - "
-                + e.getMessage()
+                "Report failed: {}",
+                e.getMessage()
             );
             throw new LedgerException(
                 "Report execution failed",
                 e,
                 e.getErrorCode()
             );
-        } finally {
-            if (rs != null) {
-                try { rs.close(); }
-                catch (SQLException e) {}
-            }
-            if (cs != null) {
-                try { cs.close(); }
-                catch (SQLException e) {}
-            }
-            if (conn != null) {
-                try { conn.close(); }
-                catch (SQLException e) {}
-            }
         }
     }
 }

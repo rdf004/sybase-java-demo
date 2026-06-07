@@ -1,100 +1,52 @@
 package com.ubs.ledger.model;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
-/**
- * TradeAudit entity.
- * Mapped to trade_audit table in Sybase.
- *
- * @author Platform Engineering
- * @since 1.0
- */
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Table(name = "trade_audit")
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(of = {
+    "auditId", "tradeId",
+    "oldStatus", "newStatus"
+})
 public class TradeAudit {
 
-    private long auditId;
-    private long tradeId;
+    @Id
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
+    @Column(name = "audit_id")
+    private Long auditId;
+
+    @Column(name = "trade_id")
+    private Long tradeId;
+
+    @Column(name = "old_status")
     private String oldStatus;
+
+    @Column(name = "new_status")
     private String newStatus;
+
+    @Column(name = "changed_by")
     private String changedBy;
+
+    @Column(name = "change_reason")
     private String changeReason;
-    private Date changedAt;
 
-    public TradeAudit() {
-    }
-
-    public long getAuditId() {
-        return auditId;
-    }
-
-    public void setAuditId(long auditId) {
-        this.auditId = auditId;
-    }
-
-    public long getTradeId() {
-        return tradeId;
-    }
-
-    public void setTradeId(long tradeId) {
-        this.tradeId = tradeId;
-    }
-
-    public String getOldStatus() {
-        return oldStatus;
-    }
-
-    public void setOldStatus(
-        String oldStatus
-    ) {
-        this.oldStatus = oldStatus;
-    }
-
-    public String getNewStatus() {
-        return newStatus;
-    }
-
-    public void setNewStatus(
-        String newStatus
-    ) {
-        this.newStatus = newStatus;
-    }
-
-    public String getChangedBy() {
-        return changedBy;
-    }
-
-    public void setChangedBy(
-        String changedBy
-    ) {
-        this.changedBy = changedBy;
-    }
-
-    public String getChangeReason() {
-        return changeReason;
-    }
-
-    public void setChangeReason(
-        String changeReason
-    ) {
-        this.changeReason = changeReason;
-    }
-
-    public Date getChangedAt() {
-        return changedAt;
-    }
-
-    public void setChangedAt(
-        Date changedAt
-    ) {
-        this.changedAt = changedAt;
-    }
-
-    @Override
-    public String toString() {
-        return "TradeAudit{"
-            + "auditId=" + auditId
-            + ", tradeId=" + tradeId
-            + ", oldStatus='" + oldStatus
-            + "', newStatus='" + newStatus
-            + "'}";
-    }
+    @Column(name = "changed_at")
+    private LocalDateTime changedAt;
 }

@@ -3,57 +3,43 @@ package com.ubs.ledger.controller;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory
-    .annotation.Autowired;
-import org.springframework.http
-    .HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http
     .ResponseEntity;
-import org.springframework.stereotype
-    .Controller;
+import org.springframework.web.bind
+    .annotation.GetMapping;
 import org.springframework.web.bind
     .annotation.PathVariable;
+import org.springframework.web.bind
+    .annotation.PostMapping;
 import org.springframework.web.bind
     .annotation.RequestBody;
 import org.springframework.web.bind
     .annotation.RequestMapping;
 import org.springframework.web.bind
-    .annotation.RequestMethod;
-import org.springframework.web.bind
     .annotation.RequestParam;
 import org.springframework.web.bind
-    .annotation.ResponseBody;
+    .annotation.RestController;
 
 import com.ubs.ledger.exception
-    .LedgerException;
+    .ResourceNotFoundException;
 import com.ubs.ledger.model.Settlement;
 import com.ubs.ledger.model.Trade;
 import com.ubs.ledger.model.TradeAudit;
 import com.ubs.ledger.service.TradeService;
 
-/**
- * REST controller for trade operations.
- * Handles CRUD, lifecycle, and audit
- * trail endpoints.
- *
- * NOTE: We use @Controller + @ResponseBody
- * instead of @RestController because
- * @RestController was added in Spring 4.0.
- *
- * @author Platform Engineering
- * @since 1.0
- */
-@Controller
-@RequestMapping("/trades")
+@RestController
+@RequestMapping("/api/trades")
 public class TradeController {
 
     private static final Logger LOG =
-        Logger.getLogger(
+        LoggerFactory.getLogger(
             TradeController.class
         );
 
@@ -62,566 +48,228 @@ public class TradeController {
             "yyyy-MM-dd"
         );
 
-    @Autowired
-    private TradeService tradeService;
+    private final TradeService svc;
 
-    /**
-     * GET /api/trades
-     * List trades with optional filters.
-     */
-    @RequestMapping(
-        method = RequestMethod.GET
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > listTrades(
-        @RequestParam(
-            value = "status",
-            required = false
-        ) String status,
-        @RequestParam(
-            value = "trader_id",
-            required = false
-        ) String traderId,
-        @RequestParam(
-            value = "cp_id",
-            required = false
-        ) String cpId,
-        @RequestParam(
-            value = "direction",
-            required = false
-        ) String direction,
-        @RequestParam(
-            value = "currency",
-            required = false
-        ) String currency
+    public TradeController(
+        TradeService svc
     ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            Map<String, String> filters =
-                new HashMap<String, String>();
-            if (status != null) {
-                filters.put(
-                    "status", status
-                );
-            }
-            if (traderId != null) {
-                filters.put(
-                    "trader_id", traderId
-                );
-            }
-            if (cpId != null) {
-                filters.put(
-                    "cp_id", cpId
-                );
-            }
-            if (direction != null) {
-                filters.put(
-                    "direction", direction
-                );
-            }
-            if (currency != null) {
-                filters.put(
-                    "currency", currency
-                );
-            }
-
-            List<Trade> trades;
-            if (filters.isEmpty()) {
-                trades =
-                    tradeService.listTrades(
-                        200
-                    );
-            } else {
-                trades =
-                    tradeService.searchTrades(
-                        filters
-                    );
-            }
-
-            response.put(
-                "trades", trades
-            );
-            response.put(
-                "count", trades.size()
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "List trades failed: "
-                + e.getMessage()
-            );
-            response.put(
-                "error",
-                "something went wrong"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
-        }
+        this.svc = svc;
     }
 
-    /**
-     * GET /api/trades/{tradeId}
-     * Get trade detail with settlements
-     * and audit trail.
-     */
-    @RequestMapping(
-        value = "/{tradeId}",
-        method = RequestMethod.GET
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > getTrade(
+    @GetMapping
+    public Map<String, Object> list(
+        @RequestParam(
+            defaultValue = "200"
+        ) int limit
+    ) {
+        List<Trade> trades =
+            svc.listTrades(limit);
+        return Map.of(
+            "trades", trades,
+            "count", trades.size()
+        );
+    }
+
+    @GetMapping("/search")
+    public Map<String, Object> search(
+        @RequestParam
+        Map<String, String> params
+    ) {
+        params.remove("limit");
+        List<Trade> trades =
+            svc.searchTrades(params);
+        return Map.of(
+            "trades", trades,
+            "count", trades.size()
+        );
+    }
+
+    @GetMapping("/{tradeId}")
+    public Map<String, Object> get(
         @PathVariable long tradeId
     ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            Trade trade =
-                tradeService.getTradeDetail(
-                    tradeId
-                );
-            if (trade == null) {
-                response.put(
-                    "error",
+        Trade trade =
+            svc.getTradeDetail(tradeId);
+        if (trade == null) {
+            throw
+                new ResourceNotFoundException(
                     "trade not found"
                 );
-                return new ResponseEntity
-                    <Map<String, Object>>(
-                        response,
-                        HttpStatus.NOT_FOUND
-                    );
-            }
-
-            response.put("trade", trade);
-
-            List<Settlement> settlements =
-                tradeService.getSettlements(
-                    tradeId
-                );
-            response.put(
-                "settlements",
-                settlements
-            );
-
-            List<TradeAudit> audit =
-                tradeService.getAuditTrail(
-                    tradeId
-                );
-            response.put(
-                "audit_trail", audit
-            );
-
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Get trade failed for "
-                + tradeId + ": "
-                + e.getMessage()
-            );
-            response.put(
-                "error",
-                "something went wrong"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
         }
+        List<Settlement> settlements =
+            svc.getSettlements(tradeId);
+        List<TradeAudit> audit =
+            svc.getAuditTrail(tradeId);
+
+        return Map.of(
+            "trade", trade,
+            "settlements", settlements,
+            "audit_trail", audit
+        );
     }
 
-    /**
-     * POST /api/trades
-     * Book a new trade via sp_book_trade.
-     */
-    @RequestMapping(
-        method = RequestMethod.POST
-    )
-    @ResponseBody
+    @PostMapping
     public ResponseEntity<
         Map<String, Object>
-    > bookTrade(
+    > book(
         @RequestBody
         Map<String, Object> body
-    ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            // validate required fields
-            String[] required = {
-                "trade_ref", "trade_date",
-                "settle_date", "trader_id",
-                "cp_id", "instr_id",
-                "direction", "quantity",
-                "price", "currency"
-            };
-            List<String> missing =
-                new ArrayList<String>();
-            for (String field : required) {
-                if (!body.containsKey(
-                    field
-                )) {
-                    missing.add(field);
-                }
+    ) throws Exception {
+        var required = List.of(
+            "trade_ref", "trade_date",
+            "settle_date", "trader_id",
+            "cp_id", "instr_id",
+            "direction", "quantity",
+            "price", "currency"
+        );
+        var missing =
+            new ArrayList<String>();
+        for (var f : required) {
+            if (!body.containsKey(f)) {
+                missing.add(f);
             }
-            if (!missing.isEmpty()) {
-                response.put(
-                    "error",
+        }
+        if (!missing.isEmpty()) {
+            throw
+                new IllegalArgumentException(
                     "missing fields: "
-                    + missing.toString()
+                    + missing
                 );
-                return new ResponseEntity
-                    <Map<String, Object>>(
-                        response,
-                        HttpStatus
-                        .BAD_REQUEST
-                    );
-            }
+        }
 
-            Date tradeDate =
-                DATE_FMT.parse(
-                    (String) body.get(
-                        "trade_date"
-                    )
-                );
-            Date settleDate =
-                DATE_FMT.parse(
-                    (String) body.get(
-                        "settle_date"
-                    )
-                );
-
-            double accruedInt = 0.0;
-            if (body.containsKey(
-                "accrued_int"
-            )) {
-                accruedInt =
-                    ((Number) body.get(
-                        "accrued_int"
-                    )).doubleValue();
-            }
-
-            long newId =
-                tradeService.bookTrade(
-                    (String) body.get(
-                        "trade_ref"
-                    ),
-                    tradeDate,
-                    settleDate,
-                    ((Number) body.get(
-                        "trader_id"
-                    )).longValue(),
-                    ((Number) body.get(
-                        "cp_id"
-                    )).longValue(),
-                    ((Number) body.get(
-                        "instr_id"
-                    )).longValue(),
-                    (String) body.get(
-                        "direction"
-                    ),
-                    ((Number) body.get(
-                        "quantity"
-                    )).doubleValue(),
-                    ((Number) body.get(
-                        "price"
-                    )).doubleValue(),
-                    (String) body.get(
-                        "currency"
-                    ),
-                    accruedInt
-                );
-
-            response.put(
-                "message", "trade booked"
+        Date tradeDate;
+        Date settleDate;
+        synchronized (DATE_FMT) {
+            tradeDate = DATE_FMT.parse(
+                (String) body.get(
+                    "trade_date"
+                )
             );
-            response.put(
+            settleDate = DATE_FMT.parse(
+                (String) body.get(
+                    "settle_date"
+                )
+            );
+        }
+
+        double accruedInt = 0.0;
+        if (body.containsKey(
+            "accrued_int"
+        )) {
+            accruedInt =
+                ((Number) body.get(
+                    "accrued_int"
+                )).doubleValue();
+        }
+
+        long newId = svc.bookTrade(
+            (String) body.get("trade_ref"),
+            tradeDate,
+            settleDate,
+            ((Number) body.get(
+                "trader_id"
+            )).longValue(),
+            ((Number) body.get(
+                "cp_id"
+            )).longValue(),
+            ((Number) body.get(
+                "instr_id"
+            )).longValue(),
+            (String) body.get("direction"),
+            ((Number) body.get(
+                "quantity"
+            )).doubleValue(),
+            ((Number) body.get(
+                "price"
+            )).doubleValue(),
+            (String) body.get("currency"),
+            accruedInt
+        );
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(Map.of(
+                "message", "trade booked",
                 "new_trade_id", newId
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus.CREATED
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Book trade failed: "
-                + e.getMessage()
-            );
-            response.put(
-                "error", "booking failed"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
-        } catch (Exception e) {
-            LOG.error(
-                "Book trade parse error: "
-                + e.getMessage()
-            );
-            response.put(
-                "error",
-                "invalid request data"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .BAD_REQUEST
-                );
-        }
+            ));
     }
 
-    /**
-     * POST /api/trades/{tradeId}/match
-     */
-    @RequestMapping(
-        value = "/{tradeId}/match",
-        method = RequestMethod.POST
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > matchTrade(
+    @PostMapping("/{tradeId}/match")
+    public Map<String, Object> match(
         @PathVariable long tradeId,
         @RequestBody(required = false)
         Map<String, Object> body
     ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            String matchedBy = "SYSTEM";
-            if (body != null
-                && body.containsKey(
-                    "matched_by"
-                )) {
-                matchedBy = (String)
-                    body.get("matched_by");
-            }
-
-            tradeService.matchTrade(
-                tradeId, matchedBy
-            );
-
-            response.put(
-                "message", "trade matched"
-            );
-            response.put(
-                "trade_id", tradeId
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Match failed for "
-                + tradeId + ": "
-                + e.getMessage()
-            );
-            response.put(
-                "error", e.getMessage()
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
+        String matchedBy = "SYSTEM";
+        if (body != null
+            && body.containsKey(
+                "matched_by"
+            )) {
+            matchedBy = (String)
+                body.get("matched_by");
         }
+        svc.matchTrade(
+            tradeId, matchedBy
+        );
+        return Map.of(
+            "message", "trade matched",
+            "trade_id", tradeId
+        );
     }
 
-    /**
-     * POST /api/trades/{tradeId}/settle
-     */
-    @RequestMapping(
-        value = "/{tradeId}/settle",
-        method = RequestMethod.POST
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > settleTrade(
+    @PostMapping("/{tradeId}/settle")
+    public Map<String, Object> settle(
         @PathVariable long tradeId,
         @RequestBody(required = false)
         Map<String, Object> body
     ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            String method = "DVP";
-            if (body != null
-                && body.containsKey(
-                    "settle_method"
-                )) {
-                method = (String)
-                    body.get(
-                        "settle_method"
-                    );
-            }
-
-            tradeService.settleTrade(
-                tradeId, method
-            );
-
-            response.put(
-                "message",
-                "settlement initiated"
-            );
-            response.put(
-                "trade_id", tradeId
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Settle failed for "
-                + tradeId + ": "
-                + e.getMessage()
-            );
-            response.put(
-                "error", e.getMessage()
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
+        String method = "DVP";
+        if (body != null
+            && body.containsKey(
+                "settle_method"
+            )) {
+            method = (String)
+                body.get("settle_method");
         }
+        svc.settleTrade(tradeId, method);
+        return Map.of(
+            "message",
+            "settlement initiated",
+            "trade_id", tradeId
+        );
     }
 
-    /**
-     * POST /api/trades/{tradeId}/retry
-     */
-    @RequestMapping(
-        value = "/{tradeId}/retry",
-        method = RequestMethod.POST
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > retryTrade(
+    @PostMapping("/{tradeId}/retry")
+    public Map<String, Object> retry(
         @PathVariable long tradeId,
         @RequestBody(required = false)
         Map<String, Object> body
     ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            String method = null;
-            if (body != null
-                && body.containsKey(
-                    "settle_method"
-                )) {
-                method = (String)
-                    body.get(
-                        "settle_method"
-                    );
-            }
-
-            tradeService.retryFailed(
-                tradeId, method
-            );
-
-            response.put(
-                "message",
-                "trade re-queued"
-            );
-            response.put(
-                "trade_id", tradeId
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Retry failed for "
-                + tradeId + ": "
-                + e.getMessage()
-            );
-            response.put(
-                "error", e.getMessage()
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
+        String method = null;
+        if (body != null
+            && body.containsKey(
+                "settle_method"
+            )) {
+            method = (String)
+                body.get("settle_method");
         }
+        svc.retryFailed(tradeId, method);
+        return Map.of(
+            "message", "trade re-queued",
+            "trade_id", tradeId
+        );
     }
 
-    /**
-     * GET /api/trades/{tradeId}/audit
-     */
-    @RequestMapping(
-        value = "/{tradeId}/audit",
-        method = RequestMethod.GET
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > tradeAudit(
+    @GetMapping("/{tradeId}/audit")
+    public Map<String, Object> audit(
         @PathVariable long tradeId
     ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            List<TradeAudit> audit =
-                tradeService.getAuditTrail(
-                    tradeId
-                );
-            response.put(
-                "trade_id", tradeId
-            );
-            response.put(
-                "audit_trail", audit
-            );
-            response.put(
-                "count", audit.size()
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Audit failed for "
-                + tradeId + ": "
-                + e.getMessage()
-            );
-            response.put(
-                "error",
-                "something went wrong"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
-        }
+        List<TradeAudit> trail =
+            svc.getAuditTrail(tradeId);
+        return Map.of(
+            "trade_id", tradeId,
+            "audit_trail", trail,
+            "count", trail.size()
+        );
     }
 }

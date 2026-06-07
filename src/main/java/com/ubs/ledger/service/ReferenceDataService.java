@@ -2,95 +2,73 @@ package com.ubs.ledger.service;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.springframework.stereotype
+    .Service;
 
-import com.ubs.ledger.dao.CounterpartyDao;
-import com.ubs.ledger.dao.InstrumentDao;
-import com.ubs.ledger.dao.TraderDao;
-import com.ubs.ledger.exception
-    .LedgerException;
 import com.ubs.ledger.model.Counterparty;
 import com.ubs.ledger.model.Instrument;
 import com.ubs.ledger.model.Trader;
+import com.ubs.ledger.repository
+    .CounterpartyRepository;
+import com.ubs.ledger.repository
+    .InstrumentRepository;
+import com.ubs.ledger.repository
+    .TraderRepository;
 
-/**
- * Service for reference data lookups.
- * Counterparties, instruments, traders.
- *
- * @author Platform Engineering
- * @since 1.0
- */
+@Service
 public class ReferenceDataService {
 
-    private static final Logger LOG =
-        Logger.getLogger(
-            ReferenceDataService.class
-        );
+    private final CounterpartyRepository
+        cpRepo;
+    private final InstrumentRepository
+        instrRepo;
+    private final TraderRepository
+        traderRepo;
 
-    private CounterpartyDao
-        counterpartyDao;
-    private InstrumentDao instrumentDao;
-    private TraderDao traderDao;
-
-    public void setCounterpartyDao(
-        CounterpartyDao counterpartyDao
+    public ReferenceDataService(
+        CounterpartyRepository cpRepo,
+        InstrumentRepository instrRepo,
+        TraderRepository traderRepo
     ) {
-        this.counterpartyDao =
-            counterpartyDao;
+        this.cpRepo = cpRepo;
+        this.instrRepo = instrRepo;
+        this.traderRepo = traderRepo;
     }
 
-    public void setInstrumentDao(
-        InstrumentDao instrumentDao
-    ) {
-        this.instrumentDao = instrumentDao;
-    }
-
-    public void setTraderDao(
-        TraderDao traderDao
-    ) {
-        this.traderDao = traderDao;
-    }
-
-    // Counterparties
     public List<Counterparty>
-        listCounterparties()
-        throws LedgerException {
-        return counterpartyDao.findAll();
+        listCounterparties() {
+        return cpRepo
+            .findAllByOrderByCpCode();
     }
 
     public Counterparty getCounterparty(
         long cpId
-    ) throws LedgerException {
-        return counterpartyDao.findById(
-            cpId
-        );
+    ) {
+        return cpRepo.findById(cpId)
+            .orElse(null);
     }
 
-    // Instruments
     public List<Instrument>
-        listInstruments()
-        throws LedgerException {
-        return instrumentDao.findAll();
+        listInstruments() {
+        return instrRepo
+            .findAllByOrderByTicker();
     }
 
     public Instrument getInstrument(
         long instrId
-    ) throws LedgerException {
-        return instrumentDao.findById(
-            instrId
-        );
+    ) {
+        return instrRepo.findById(instrId)
+            .orElse(null);
     }
 
-    // Traders
-    public List<Trader> listTraders()
-        throws LedgerException {
-        return traderDao.findAll();
+    public List<Trader> listTraders() {
+        return traderRepo
+            .findAllByOrderByEmpCode();
     }
 
-    public Trader getTrader(long traderId)
-        throws LedgerException {
-        return traderDao.findById(
-            traderId
-        );
+    public Trader getTrader(long traderId) {
+        return traderRepo
+            .findById(traderId)
+            .orElse(null);
     }
 }
