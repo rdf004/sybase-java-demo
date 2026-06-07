@@ -66,6 +66,15 @@ public class TradeDao {
                     ).toLocalDateTime()
                     : null
             );
+            t.setValueDate(
+                rs.getTimestamp(
+                    "value_date"
+                ) != null
+                    ? rs.getTimestamp(
+                        "value_date"
+                    ).toLocalDateTime()
+                    : null
+            );
             t.setTraderId(
                 rs.getLong("trader_id")
             );

@@ -40,7 +40,8 @@ public class ReportDao {
         dailyPnl(
             Date startDate, Date endDate
         ) {
-        if (startDate == null) {
+        if (startDate == null
+            || endDate == null) {
             return execReport(
                 "{call sp_daily_pnl}",
                 null, null
@@ -64,7 +65,8 @@ public class ReportDao {
         settlementReport(
             Date startDate, Date endDate
         ) {
-        if (startDate == null) {
+        if (startDate == null
+            || endDate == null) {
             return execReport(
                 "{call sp_settle_report}",
                 null, null
