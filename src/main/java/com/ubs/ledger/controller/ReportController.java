@@ -2,47 +2,29 @@ package com.ubs.ledger.controller;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory
-    .annotation.Autowired;
-import org.springframework.http
-    .HttpStatus;
-import org.springframework.http
-    .ResponseEntity;
-import org.springframework.stereotype
-    .Controller;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind
+    .annotation.GetMapping;
 import org.springframework.web.bind
     .annotation.RequestMapping;
 import org.springframework.web.bind
-    .annotation.RequestMethod;
-import org.springframework.web.bind
     .annotation.RequestParam;
 import org.springframework.web.bind
-    .annotation.ResponseBody;
+    .annotation.RestController;
 
-import com.ubs.ledger.exception
-    .LedgerException;
 import com.ubs.ledger.service
     .ReportService;
 
-/**
- * REST controller for reports.
- * Calls Sybase stored procedures for
- * P&L, aging, and settlement reports.
- *
- * @author Platform Engineering
- * @since 1.3
- */
-@Controller
-@RequestMapping("/reports")
+@RestController
+@RequestMapping("/api/reports")
 public class ReportController {
 
     private static final Logger LOG =
-        Logger.getLogger(
+        LoggerFactory.getLogger(
             ReportController.class
         );
 
@@ -51,20 +33,16 @@ public class ReportController {
             "yyyy-MM-dd"
         );
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService svc;
 
-    /**
-     * GET /api/reports/pnl
-     */
-    @RequestMapping(
-        value = "/pnl",
-        method = RequestMethod.GET
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > dailyPnl(
+    public ReportController(
+        ReportService svc
+    ) {
+        this.svc = svc;
+    }
+
+    @GetMapping("/pnl")
+    public Map<String, Object> pnl(
         @RequestParam(
             value = "start_date",
             required = false
@@ -73,122 +51,42 @@ public class ReportController {
             value = "end_date",
             required = false
         ) String endStr
-    ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            Date startDate;
-            Date endDate;
+    ) throws Exception {
+        Date start = null;
+        Date end = null;
+        synchronized (DATE_FMT) {
             if (startStr != null) {
-                startDate =
-                    DATE_FMT.parse(
-                        startStr
-                    );
-            } else {
-                startDate =
-                    DATE_FMT.parse(
-                        "2012-01-01"
-                    );
+                start = DATE_FMT.parse(
+                    startStr
+                );
             }
             if (endStr != null) {
-                endDate =
-                    DATE_FMT.parse(endStr);
-            } else {
-                endDate = new Date();
+                end = DATE_FMT.parse(
+                    endStr
+                );
             }
-
-            List<Map<String, Object>> data =
-                reportService.getDailyPnl(
-                    startDate, endDate
-                );
-
-            response.put(
-                "report", "daily_pnl"
-            );
-            response.put(
-                "start_date",
-                DATE_FMT.format(startDate)
-            );
-            response.put(
-                "end_date",
-                DATE_FMT.format(endDate)
-            );
-            response.put("data", data);
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (Exception e) {
-            LOG.error(
-                "PnL report failed: "
-                + e.getMessage()
-            );
-            response.put(
-                "error", "report failed"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
         }
+
+        List<Map<String, Object>> data =
+            svc.getDailyPnl(start, end);
+        return Map.of(
+            "report", "daily_pnl",
+            "data", data
+        );
     }
 
-    /**
-     * GET /api/reports/aging
-     */
-    @RequestMapping(
-        value = "/aging",
-        method = RequestMethod.GET
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > agingReport() {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            List<Map<String, Object>> data =
-                reportService
-                    .getAgingReport();
-
-            response.put(
-                "report", "aging"
-            );
-            response.put("data", data);
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (LedgerException e) {
-            LOG.error(
-                "Aging report failed: "
-                + e.getMessage()
-            );
-            response.put(
-                "error", "report failed"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
-        }
+    @GetMapping("/aging")
+    public Map<String, Object> aging() {
+        List<Map<String, Object>> data =
+            svc.getAgingReport();
+        return Map.of(
+            "report", "aging",
+            "data", data
+        );
     }
 
-    /**
-     * GET /api/reports/settlements
-     */
-    @RequestMapping(
-        value = "/settlements",
-        method = RequestMethod.GET
-    )
-    @ResponseBody
-    public ResponseEntity<
-        Map<String, Object>
-    > settlementReport(
+    @GetMapping("/settlements")
+    public Map<String, Object> settlements(
         @RequestParam(
             value = "start_date",
             required = false
@@ -197,52 +95,29 @@ public class ReportController {
             value = "end_date",
             required = false
         ) String endStr
-    ) {
-        Map<String, Object> response =
-            new HashMap<String, Object>();
-        try {
-            Date startDate = null;
-            Date endDate = null;
+    ) throws Exception {
+        Date start = null;
+        Date end = null;
+        synchronized (DATE_FMT) {
             if (startStr != null) {
-                startDate =
-                    DATE_FMT.parse(
-                        startStr
-                    );
+                start = DATE_FMT.parse(
+                    startStr
+                );
             }
             if (endStr != null) {
-                endDate =
-                    DATE_FMT.parse(endStr);
+                end = DATE_FMT.parse(
+                    endStr
+                );
             }
-
-            List<Map<String, Object>> data =
-                reportService
-                .getSettlementReport(
-                    startDate, endDate
-                );
-
-            response.put(
-                "report", "settlements"
-            );
-            response.put("data", data);
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response, HttpStatus.OK
-                );
-        } catch (Exception e) {
-            LOG.error(
-                "Settlement report"
-                + " failed: "
-                + e.getMessage()
-            );
-            response.put(
-                "error", "report failed"
-            );
-            return new ResponseEntity
-                <Map<String, Object>>(
-                    response,
-                    HttpStatus
-                    .INTERNAL_SERVER_ERROR
-                );
         }
+
+        List<Map<String, Object>> data =
+            svc.getSettlementReport(
+                start, end
+            );
+        return Map.of(
+            "report", "settlements",
+            "data", data
+        );
     }
 }

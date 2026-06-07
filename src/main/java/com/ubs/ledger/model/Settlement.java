@@ -1,124 +1,58 @@
 package com.ubs.ledger.model;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
-/**
- * Settlement entity.
- * Mapped to settlement table in Sybase.
- *
- * @author Platform Engineering
- * @since 1.2
- */
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Table(name = "settlement")
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(of = {
+    "settleId", "tradeId", "settleStatus"
+})
 public class Settlement {
 
-    private long settleId;
-    private long tradeId;
-    private int attemptNum;
+    @Id
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
+    @Column(name = "settle_id")
+    private Long settleId;
+
+    @Column(name = "trade_id")
+    private Long tradeId;
+
+    @Column(name = "attempt_num")
+    private Integer attemptNum;
+
+    @Column(name = "settle_status")
     private String settleStatus;
+
+    @Column(name = "settle_method")
     private String settleMethod;
+
+    @Column(name = "settled_amt")
     private BigDecimal settledAmt;
+
+    @Column(name = "fail_reason")
     private String failReason;
-    private Date settledAt;
-    private Date createdAt;
 
-    public Settlement() {
-    }
+    @Column(name = "settled_at")
+    private LocalDateTime settledAt;
 
-    public long getSettleId() {
-        return settleId;
-    }
-
-    public void setSettleId(
-        long settleId
-    ) {
-        this.settleId = settleId;
-    }
-
-    public long getTradeId() {
-        return tradeId;
-    }
-
-    public void setTradeId(long tradeId) {
-        this.tradeId = tradeId;
-    }
-
-    public int getAttemptNum() {
-        return attemptNum;
-    }
-
-    public void setAttemptNum(
-        int attemptNum
-    ) {
-        this.attemptNum = attemptNum;
-    }
-
-    public String getSettleStatus() {
-        return settleStatus;
-    }
-
-    public void setSettleStatus(
-        String settleStatus
-    ) {
-        this.settleStatus = settleStatus;
-    }
-
-    public String getSettleMethod() {
-        return settleMethod;
-    }
-
-    public void setSettleMethod(
-        String settleMethod
-    ) {
-        this.settleMethod = settleMethod;
-    }
-
-    public BigDecimal getSettledAmt() {
-        return settledAmt;
-    }
-
-    public void setSettledAmt(
-        BigDecimal settledAmt
-    ) {
-        this.settledAmt = settledAmt;
-    }
-
-    public String getFailReason() {
-        return failReason;
-    }
-
-    public void setFailReason(
-        String failReason
-    ) {
-        this.failReason = failReason;
-    }
-
-    public Date getSettledAt() {
-        return settledAt;
-    }
-
-    public void setSettledAt(
-        Date settledAt
-    ) {
-        this.settledAt = settledAt;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(
-        Date createdAt
-    ) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "Settlement{"
-            + "settleId=" + settleId
-            + ", tradeId=" + tradeId
-            + ", status='" + settleStatus
-            + "'}";
-    }
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }

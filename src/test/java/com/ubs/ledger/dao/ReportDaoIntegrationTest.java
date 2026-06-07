@@ -1,93 +1,66 @@
 package com.ubs.ledger.dao;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api
+    .Assertions.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory
     .annotation.Autowired;
-import org.springframework.test.context
-    .ContextConfiguration;
-import org.springframework.test.context
-    .junit4.SpringJUnit4ClassRunner;
+import org.springframework.boot.test.context
+    .SpringBootTest;
 
-import com.ubs.ledger.exception
-    .LedgerException;
-
-/**
- * Integration tests for ReportDao.
- * Exercises all reporting stored procs
- * against live Sybase ASE.
- *
- * @author A. Kowalski
- * @since 1.3
- */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-    "classpath:test-context.xml"
-})
-public class ReportDaoIntegrationTest {
+@SpringBootTest
+class ReportDaoIntegrationTest {
 
     @Autowired
     private ReportDao reportDao;
 
     @Test
-    public void testDailyPnl()
-        throws Exception {
-        SimpleDateFormat sdf =
-            new SimpleDateFormat(
-                "yyyy-MM-dd"
-            );
+    void dailyPnl() throws Exception {
+        var sdf = new SimpleDateFormat(
+            "yyyy-MM-dd"
+        );
         Date start =
             sdf.parse("2020-01-01");
         Date end =
             sdf.parse("2030-12-31");
 
         List<Map<String, Object>> result =
-            reportDao.dailyPnl(
-                start, end
-            );
+            reportDao.dailyPnl(start, end);
         assertNotNull(result);
-        // should have at least one row
-        // from seed data
         assertFalse(
-            "PnL should have results",
-            result.isEmpty()
+            result.isEmpty(),
+            "PnL should have results"
         );
 
-        // verify expected columns
-        Map<String, Object> firstRow =
-            result.get(0);
+        Map<String, Object> first =
+            result.getFirst();
         assertTrue(
-            "Should have desk column",
-            firstRow.containsKey("desk")
+            first.containsKey("desk"),
+            "Should have desk column"
         );
         assertTrue(
-            "Should have trade_count",
-            firstRow.containsKey(
+            first.containsKey(
                 "trade_count"
-            )
+            ),
+            "Should have trade_count"
         );
     }
 
     @Test
-    public void testAgingReport()
-        throws LedgerException {
+    void agingReport() {
         List<Map<String, Object>> result =
             reportDao.agingReport();
         assertNotNull(result);
-        // aging report should return
-        // unsettled trades from seed data
     }
 
     @Test
-    public void testSettlementReport()
-        throws LedgerException {
+    void settlementReport() {
         List<Map<String, Object>> result =
             reportDao.settlementReport(
                 null, null

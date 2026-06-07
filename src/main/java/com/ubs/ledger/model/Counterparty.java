@@ -1,123 +1,61 @@
 package com.ubs.ledger.model;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
-/**
- * Counterparty entity.
- * Mapped to counterparty table in Sybase.
- *
- * @author Platform Engineering
- * @since 1.0
- */
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Table(name = "counterparty")
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(of = {
+    "cpId", "cpCode", "cpName"
+})
 public class Counterparty {
 
-    private long cpId;
+    @Id
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
+    @Column(name = "cp_id")
+    private Long cpId;
+
+    @Column(name = "cp_code")
     private String cpCode;
+
+    @Column(name = "cp_name")
     private String cpName;
+
+    @Column(name = "cp_type")
     private String cpType;
+
+    @Column(name = "lei_code")
     private String leiCode;
+
+    @Column(name = "region")
     private String region;
+
+    @Column(name = "credit_limit")
     private BigDecimal creditLimit;
+
+    @Column(name = "notes")
     private String notes;
-    private int isActive;
-    private Date createdAt;
 
-    public Counterparty() {
-    }
+    @Column(name = "is_active")
+    private Integer isActive;
 
-    public long getCpId() {
-        return cpId;
-    }
-
-    public void setCpId(long cpId) {
-        this.cpId = cpId;
-    }
-
-    public String getCpCode() {
-        return cpCode;
-    }
-
-    public void setCpCode(String cpCode) {
-        this.cpCode = cpCode;
-    }
-
-    public String getCpName() {
-        return cpName;
-    }
-
-    public void setCpName(String cpName) {
-        this.cpName = cpName;
-    }
-
-    public String getCpType() {
-        return cpType;
-    }
-
-    public void setCpType(String cpType) {
-        this.cpType = cpType;
-    }
-
-    public String getLeiCode() {
-        return leiCode;
-    }
-
-    public void setLeiCode(
-        String leiCode
-    ) {
-        this.leiCode = leiCode;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
-    public BigDecimal getCreditLimit() {
-        return creditLimit;
-    }
-
-    public void setCreditLimit(
-        BigDecimal creditLimit
-    ) {
-        this.creditLimit = creditLimit;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public int getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(int isActive) {
-        this.isActive = isActive;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(
-        Date createdAt
-    ) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "Counterparty{"
-            + "cpId=" + cpId
-            + ", cpCode='" + cpCode
-            + "', cpName='" + cpName
-            + "'}";
-    }
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }

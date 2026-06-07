@@ -4,42 +4,33 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype
+    .Service;
 
 import com.ubs.ledger.dao.ReportDao;
-import com.ubs.ledger.exception
-    .LedgerException;
 
-/**
- * Service for report generation.
- * Delegates to ReportDao which calls
- * Sybase stored procedures.
- *
- * @author Platform Engineering
- * @since 1.3
- */
+@Service
 public class ReportService {
 
     private static final Logger LOG =
-        Logger.getLogger(
+        LoggerFactory.getLogger(
             ReportService.class
         );
 
-    private ReportDao reportDao;
+    private final ReportDao reportDao;
 
-    public void setReportDao(
+    public ReportService(
         ReportDao reportDao
     ) {
         this.reportDao = reportDao;
     }
 
-    /**
-     * Daily P&L report via sp_daily_pnl.
-     */
     public List<Map<String, Object>>
         getDailyPnl(
             Date startDate, Date endDate
-        ) throws LedgerException {
+        ) {
         LOG.info(
             "Running daily P&L report"
         );
@@ -48,26 +39,16 @@ public class ReportService {
         );
     }
 
-    /**
-     * Aging report via sp_aging_report.
-     */
     public List<Map<String, Object>>
-        getAgingReport()
-        throws LedgerException {
-        LOG.info(
-            "Running aging report"
-        );
+        getAgingReport() {
+        LOG.info("Running aging report");
         return reportDao.agingReport();
     }
 
-    /**
-     * Settlement report via
-     * sp_settle_report.
-     */
     public List<Map<String, Object>>
         getSettlementReport(
             Date startDate, Date endDate
-        ) throws LedgerException {
+        ) {
         LOG.info(
             "Running settlement report"
         );

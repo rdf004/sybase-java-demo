@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST}:1433;database=${DB_NAME:azure_sql_demo_target};encrypt=true;trustServerCertificate=false
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    show-sql: true
+
+logging:
+  level:
+    com.ubs.ledger: DEBUG
+    org.springframework.jdbc: DEBUG

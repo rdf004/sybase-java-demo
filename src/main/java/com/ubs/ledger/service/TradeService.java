@@ -4,133 +4,83 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.springframework.transaction
-    .support.TransactionCallback;
-import org.springframework.transaction
-    .support.TransactionTemplate;
-import org.springframework.transaction
-    .TransactionStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype
+    .Service;
 
-import com.ubs.ledger.dao.SettlementDao;
-import com.ubs.ledger.dao.TradeAuditDao;
 import com.ubs.ledger.dao.TradeDao;
-import com.ubs.ledger.exception
-    .LedgerException;
 import com.ubs.ledger.model.Settlement;
 import com.ubs.ledger.model.Trade;
 import com.ubs.ledger.model.TradeAudit;
+import com.ubs.ledger.repository
+    .SettlementRepository;
+import com.ubs.ledger.repository
+    .TradeAuditRepository;
 
-/**
- * Service layer for trade operations.
- * Coordinates DAO calls and manages
- * transactions.
- *
- * Uses setter injection (wired in
- * applicationContext.xml).
- *
- * @author Platform Engineering
- * @since 1.0
- */
+@Service
 public class TradeService {
 
     private static final Logger LOG =
-        Logger.getLogger(
+        LoggerFactory.getLogger(
             TradeService.class
         );
 
-    private TradeDao tradeDao;
-    private TradeAuditDao tradeAuditDao;
-    private SettlementDao settlementDao;
-    private TransactionTemplate
-        transactionTemplate;
+    private final TradeDao tradeDao;
+    private final TradeAuditRepository
+        auditRepo;
+    private final SettlementRepository
+        settlementRepo;
 
-    // Setter injection for XML wiring
-    public void setTradeDao(
-        TradeDao tradeDao
+    public TradeService(
+        TradeDao tradeDao,
+        TradeAuditRepository auditRepo,
+        SettlementRepository settlementRepo
     ) {
         this.tradeDao = tradeDao;
+        this.auditRepo = auditRepo;
+        this.settlementRepo =
+            settlementRepo;
     }
 
-    public void setTradeAuditDao(
-        TradeAuditDao tradeAuditDao
-    ) {
-        this.tradeAuditDao = tradeAuditDao;
-    }
-
-    public void setSettlementDao(
-        SettlementDao settlementDao
-    ) {
-        this.settlementDao = settlementDao;
-    }
-
-    public void setTransactionTemplate(
-        TransactionTemplate
-            transactionTemplate
-    ) {
-        this.transactionTemplate =
-            transactionTemplate;
-    }
-
-    /**
-     * List all trades.
-     */
     public List<Trade> listTrades(
         int maxRows
-    ) throws LedgerException {
+    ) {
         return tradeDao.findAll(maxRows);
     }
 
-    /**
-     * Search trades with filters.
-     */
     public List<Trade> searchTrades(
         Map<String, String> filters
-    ) throws LedgerException {
+    ) {
         return tradeDao.search(filters);
     }
 
-    /**
-     * Get trade detail with related data.
-     */
     public Trade getTradeDetail(
         long tradeId
-    ) throws LedgerException {
+    ) {
         return tradeDao.findWithDetails(
             tradeId
         );
     }
 
-    /**
-     * Get settlements for a trade.
-     */
     public List<Settlement> getSettlements(
         long tradeId
-    ) throws LedgerException {
-        return settlementDao.findByTradeId(
-            tradeId
-        );
+    ) {
+        return settlementRepo
+            .findByTradeIdOrderByAttemptNum(
+                tradeId
+            );
     }
 
-    /**
-     * Get audit trail for a trade.
-     */
     public List<TradeAudit> getAuditTrail(
         long tradeId
-    ) throws LedgerException {
-        return tradeAuditDao.findByTradeId(
-            tradeId
-        );
+    ) {
+        return auditRepo
+            .findByTradeIdOrderByChangedAt(
+                tradeId
+            );
     }
 
-    /**
-     * Book a new trade via stored proc.
-     *
-     * The stored proc handles notional
-     * calculation and audit record
-     * creation internally, so we just
-     * call it and return the new trade ID.
-     */
     public long bookTrade(
         String tradeRef,
         Date tradeDate,
@@ -143,9 +93,9 @@ public class TradeService {
         double price,
         String currency,
         double accruedInt
-    ) throws LedgerException {
+    ) {
         LOG.info(
-            "Booking trade: " + tradeRef
+            "Booking trade: {}", tradeRef
         );
         return tradeDao.bookTrade(
             tradeRef, tradeDate,
@@ -156,45 +106,35 @@ public class TradeService {
         );
     }
 
-    /**
-     * Match a trade via stored proc.
-     */
     public void matchTrade(
         long tradeId, String matchedBy
-    ) throws LedgerException {
+    ) {
         LOG.info(
-            "Matching trade: " + tradeId
-            + " by " + matchedBy
+            "Matching trade: {} by {}",
+            tradeId, matchedBy
         );
         tradeDao.matchTrade(
             tradeId, matchedBy
         );
     }
 
-    /**
-     * Settle a trade via stored proc.
-     */
     public void settleTrade(
         long tradeId, String settleMethod
-    ) throws LedgerException {
+    ) {
         LOG.info(
-            "Settling trade: " + tradeId
-            + " method=" + settleMethod
+            "Settling trade: {} method={}",
+            tradeId, settleMethod
         );
         tradeDao.settleTrade(
             tradeId, settleMethod
         );
     }
 
-    /**
-     * Retry a failed trade via stored
-     * proc.
-     */
     public void retryFailed(
         long tradeId, String settleMethod
-    ) throws LedgerException {
+    ) {
         LOG.info(
-            "Retrying trade: " + tradeId
+            "Retrying trade: {}", tradeId
         );
         tradeDao.retryFailed(
             tradeId, settleMethod

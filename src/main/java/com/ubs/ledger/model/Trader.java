@@ -1,132 +1,62 @@
 package com.ubs.ledger.model;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
-/**
- * Trader entity.
- * Mapped to trader table in Sybase.
- *
- * @author Platform Engineering
- * @since 1.0
- */
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Table(name = "trader")
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(of = {
+    "traderId", "empCode",
+    "firstName", "lastName"
+})
 public class Trader {
 
-    private long traderId;
+    @Id
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
+    @Column(name = "trader_id")
+    private Long traderId;
+
+    @Column(name = "emp_code")
     private String empCode;
+
+    @Column(name = "first_name")
     private String firstName;
+
+    @Column(name = "last_name")
     private String lastName;
+
+    @Column(name = "desk")
     private String desk;
+
+    @Column(name = "region")
     private String region;
-    private Date hireDate;
+
+    @Column(name = "hire_date")
+    private LocalDateTime hireDate;
+
+    @Column(name = "daily_limit")
     private BigDecimal dailyLimit;
-    private int isActive;
-    private Date createdAt;
 
-    public Trader() {
-    }
+    @Column(name = "is_active")
+    private Integer isActive;
 
-    public long getTraderId() {
-        return traderId;
-    }
-
-    public void setTraderId(
-        long traderId
-    ) {
-        this.traderId = traderId;
-    }
-
-    public String getEmpCode() {
-        return empCode;
-    }
-
-    public void setEmpCode(
-        String empCode
-    ) {
-        this.empCode = empCode;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(
-        String firstName
-    ) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(
-        String lastName
-    ) {
-        this.lastName = lastName;
-    }
-
-    public String getDesk() {
-        return desk;
-    }
-
-    public void setDesk(String desk) {
-        this.desk = desk;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
-    public Date getHireDate() {
-        return hireDate;
-    }
-
-    public void setHireDate(
-        Date hireDate
-    ) {
-        this.hireDate = hireDate;
-    }
-
-    public BigDecimal getDailyLimit() {
-        return dailyLimit;
-    }
-
-    public void setDailyLimit(
-        BigDecimal dailyLimit
-    ) {
-        this.dailyLimit = dailyLimit;
-    }
-
-    public int getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(int isActive) {
-        this.isActive = isActive;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(
-        Date createdAt
-    ) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "Trader{"
-            + "traderId=" + traderId
-            + ", empCode='" + empCode
-            + "', name='" + firstName
-            + " " + lastName
-            + "'}";
-    }
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }
